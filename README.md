@@ -2,7 +2,7 @@
 fofa-spider
 
 ```
-usage: main.py [-h] [-s SESSION] [-p PAGE] [-t] [-w WAIT] [-q FOFA_SQL] [-n NUMBER] [-f FILE]
+usage: main.py [-h] [-s SESSION] [-p PAGE] [-t] [-w WAIT] [-q FOFA_SQL] [-n NUMBER] [-f FILE] [-m MAXTHREAD]
 
 fofa spider
 
@@ -18,6 +18,8 @@ optional arguments:
   -n NUMBER, --number NUMBER
                         每页的结果数量,默认10条
   -f FILE, --file FILE  输出文件地址,默认按照时间起名
+  -m MAXTHREAD, --maxthread MAXTHREAD
+                        爬取title的最大线程
 ```
 
  session 需要自行抓包获取,依赖请自行添加。

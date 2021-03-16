@@ -5,6 +5,25 @@ import re
 from bs4 import BeautifulSoup
 import time
 import os
+import threading
+requests.packages.urllib3.disable_warnings()
+
+def getTitle(url,filename,semlock):
+    try:
+        content = requests.get(url,timeout=1,verify=False)
+        content.encoding='utf-8'
+        pat = r'<title>(.*?)</title>'
+        title = re.findall(pat,content.text)
+        #print(title[0])
+        try:
+            filename.write(str(url)+','+str(title[0])+'\n')
+        except:
+            pass
+        semlock.release()
+    except :
+        semlock.release()
+
+
 
 if __name__ == '__main__':
     time_now=time.strftime('%Y%m%d%H%M%S',time.localtime(time.time()))
@@ -16,12 +35,14 @@ if __name__ == '__main__':
     parser.add_argument('-q','--fofa_sql',help='FOFA 查询语句')
     parser.add_argument('-n','--number',help='每页的结果数量,默认10条',type=int,default=50)
     parser.add_argument('-f','--file', help='输出文件地址,默认按照时间起名',default=time_now+'.csv')
+    parser.add_argument('-m','--maxthread', help='爬取title的最大线程',type=int,default=50)
     given_args = parser.parse_args()
     page=given_args.page
     session = given_args.session
     sql=given_args.fofa_sql
     number=given_args.number
     filename=given_args.file
+    threadMax = threading.BoundedSemaphore(int(given_args.maxthread))
     titleflag=given_args.title
     wait=given_args.wait
     bs_sql = base64.encodebytes(sql.encode('utf8')).decode()
@@ -48,16 +69,25 @@ if __name__ == '__main__':
         for i in ip:
             url=i.attrs['href']
             if 'http' in url:
-                if(titleflag):
-                    try:
-                        content = requests.get(url,timeout=1,verify=False)
-                        content.encoding='utf-8'
-                        pat = r'<title>(.*?)</title>'
-                        title = re.findall(pat,content.text)
-                    except:
-                        title='None'
-                    f.write(f'{url},{title}\n')
-                else:
-                    f.write(f'{url}\n')
+                f.write(f'{url}\n')
         time.sleep(int(wait))
+    f.close()
+    print('爬虫结束开始判断是否探测指纹')
+    if(titleflag):
+        print('title 爬取开始')
+        count=0
+        g=open(filename,'r')
+        g_read=g.readlines()
+        x=open(f'{time_now}_title.csv','a')
+        for i in g_read:
+            count=count+1
+            i=i.replace('\n','')
+            print(str(count)+'/'+str(len(g_read))+'\r',end='')
+            threadMax.acquire()
+            t=threading.Thread(target=getTitle,args=(i,x,threadMax,))
+            t.start()
+    else:
+        print('无爬取需求')
+
+            
                 
